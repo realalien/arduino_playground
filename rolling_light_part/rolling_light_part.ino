@@ -5,13 +5,19 @@ int sensorPin = A0; // select the input pin for the input device
 
 const int numberOfLEDs = 10;
 int counter =0;
-int ms_delay=100; // 10ms is to fast for small array
+int ms_delay=50; // 10ms is to fast for small array
 const int num_of_lit_up = 5;//  num of LED should be on at one time, instead of full length, shall look like moving bricks. 
 int lit_up[num_of_lit_up];  // contain the pin numbers to be lit up
 
 boolean has_empty_slots;
 
 long loop_cnt = 0;
+
+boolean upwards = true;
+
+int last_idx = 0;
+
+int off_count = 0;  // to detect if all light off;
 
 void setup() {
   Serial.begin(9600);
@@ -32,6 +38,8 @@ void setup() {
   }
 
 
+  upwards = true;
+  
   has_empty_slots = true;
 
   loop_cnt = -1;
@@ -48,20 +56,23 @@ boolean check_has_empty_slots(){
       break;
     }  
   }
+  return has_empty;
+}
 
-//  Serial.print("check_has_empty_slots : ");
-//  if ( has_empty) {
-//    Serial.print(" YES ");
-//  } else {
-//    Serial.print(" NO ");
-//  }
-//  Serial.println("");
+boolean check_has_empty_slots_downwards(){
+  boolean has_empty = false;
+  for (int i = num_of_lit_up; i>0 ; i--){
+    if ( lit_up[i] == -1 ) {
+      has_empty = true;
+      break;
+    }  
+  }
   return has_empty;
 }
 
 
 int get_current_max_pin_num() {
-  int max_pin_num = 1; // 2 is the smallest for 2-11 arrangement 
+  int max_pin_num = 1; // 1:non-exist, 2 is the smallest for 2-11 arrangement 
   for (int i=0; i< num_of_lit_up; i++ ) {
     if ( lit_up[i] > max_pin_num ) {
       max_pin_num = lit_up[i];
@@ -69,6 +80,71 @@ int get_current_max_pin_num() {
   }
 
   return max_pin_num;
+}
+
+int get_current_min_pin_num() {
+  int min_pin_num = 12; // 12:non-exist, 11 is the larget for 2-11 arrangement 
+  for (int i=0; i< num_of_lit_up; i++ ) {
+    if ( lit_up[i] < min_pin_num && lit_up[i] != -1 ) {
+      min_pin_num = lit_up[i];
+    }
+  }
+
+  return min_pin_num;
+}
+
+
+void add_next_pin_downwards(){
+  int min_pin_num  = get_current_min_pin_num();
+
+  Serial.print("mix_pin_num  ");
+  Serial.print(" : ");
+  Serial.print(min_pin_num);
+  Serial.println("");
+
+  if ( min_pin_num > 0) {
+    // find empty slot to fill in
+
+    if ( check_has_empty_slots_downwards() ) {
+      for (int i = 0; i< num_of_lit_up; i++){
+        if ( lit_up[i] == -1 ) {
+          lit_up[i] = min_pin_num-1; // May not work if reverse
+
+          last_idx = i;
+          Serial.print("adding lit_up[ ");
+          Serial.print(i);
+          Serial.print(" ]");
+          Serial.print(" : ");
+          Serial.print(min_pin_num-1);
+          Serial.println("");
+          break;
+        }  
+      }
+    } else { // no empty slot
+      // replace the oldest
+      last_idx += 1;
+      int idx = (last_idx) % num_of_lit_up;
+      int digitToLow = lit_up[idx];
+      digitalWrite(digitToLow, LOW);
+      
+      lit_up[idx] = min_pin_num-1 ;
+      last_idx=idx;
+      
+      Serial.print("replacing lit_up[ ");
+      Serial.print(idx);
+      Serial.print(" ]");
+      Serial.print(" : ");
+      Serial.print(min_pin_num-1);
+      Serial.println("");
+    }
+
+    
+  } else {
+    // reached 11 pin, not adding, but 
+    // TODO: 
+    Serial.println("unimplemented 3");
+
+  }
 }
 
 void add_next_pin(){
@@ -118,24 +194,65 @@ void add_next_pin(){
   }
 }
 
-void add_lit_up(){
-   int current_max_pin_num = get_current_max_pin_num();
 
+void on_off_step(){
    
-   if  ( current_max_pin_num < 11 ) {
-      // still can add next +1 pin number
-       add_next_pin();
-   
-   } else {
-      // reach max pin to lit up, considering turn-off previous one
+   if ( upwards ) {
+     int current_max_pin_num = get_current_max_pin_num();
+     if  ( current_max_pin_num < 11 ) {
+        // still can add next +1 pin number
+         add_next_pin();
+     
+     } else {
+        // reach max pin to lit up, considering turn-off previous one
+  
+        int oldest_idx = (loop_cnt ) % num_of_lit_up ;
+        int digitPin = lit_up[oldest_idx];
+        lit_up[oldest_idx] = -1;
 
-      int oldest_idx = (loop_cnt ) % num_of_lit_up ;
-      int digitPin = lit_up[oldest_idx];
-      lit_up[oldest_idx] = -1;
-      digitalWrite(digitPin, LOW);
+        off_count += 1;
+        digitalWrite(digitPin, LOW);
+        
+        
+        Serial.println("doing 2 .. ");
+
+        if ( off_count - num_of_lit_up == 0 ) {
+          // reset
+          off_count = 0;
+          // flip
+          upwards = !upwards;
+        }
+     }
+   } else {  // reverse orger
+      int current_min_pin_num = get_current_min_pin_num();
+
       
-      Serial.println("doing 2 .. ");
-   }
+       
+      if  ( current_min_pin_num >2 ) {
+        // still can add next -1 pin number
+         add_next_pin_downwards();
+     
+       } else {
+          // reach max pin to lit up, considering turn-off previous one
+    
+          int oldest_idx = (loop_cnt ) % num_of_lit_up ;
+          int digitPin = lit_up[oldest_idx];
+          lit_up[oldest_idx] = -1;
+
+          off_count += 1;
+          digitalWrite(digitPin, LOW);
+          
+          Serial.println("doing 4 .. ");
+
+          if ( off_count - num_of_lit_up == 0 ) {
+            // reset
+            off_count = 0;
+            // flip
+            upwards = !upwards;
+          }
+       }
+     }
+ 
 }
 
 void loop() {
@@ -153,7 +270,7 @@ void loop() {
   // --------- changing status ---------
 
 
-  add_lit_up(); 
+  on_off_step(); 
 
   
   // --------- display ----------
@@ -173,19 +290,7 @@ void loop() {
    }
 
 
-  
-//  if ( has_empty_slots) {
-//    // update status and check
-//    add_lit_up();  // TODO: current status, too complex!!
-//    has_empty_slots = check_has_empty_slots();
-//    
-//    //add_next_candidate_pin_to_be_lit_on_or_remove
-//  } else {
-
-    
-    //replace_elements_from_start
-//  }
-
+ 
 
   delay(ms_delay);
   
