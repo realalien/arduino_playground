@@ -5,7 +5,7 @@ int sensorPin = A0; // select the input pin for the input device
 
 const int numberOfLEDs = 10;
 int counter =0;
-int ms_delay=50; // 10ms is to fast for small array
+int ms_delay=100; // 10ms is to fast for small array
 const int num_of_lit_up = 5;//  num of LED should be on at one time, instead of full length, shall look like moving bricks. 
 int lit_up[num_of_lit_up];  // contain the pin numbers to be lit up
 
@@ -97,10 +97,10 @@ int get_current_min_pin_num() {
 void add_next_pin_downwards(){
   int min_pin_num  = get_current_min_pin_num();
 
-  Serial.print("mix_pin_num  ");
-  Serial.print(" : ");
-  Serial.print(min_pin_num);
-  Serial.println("");
+//  Serial.print("mix_pin_num  ");
+//  Serial.print(" : ");
+//  Serial.print(min_pin_num);
+//  Serial.println("");
 
   if ( min_pin_num > 0) {
     // find empty slot to fill in
@@ -111,12 +111,12 @@ void add_next_pin_downwards(){
           lit_up[i] = min_pin_num-1; // May not work if reverse
 
           last_idx = i;
-          Serial.print("adding lit_up[ ");
-          Serial.print(i);
-          Serial.print(" ]");
-          Serial.print(" : ");
-          Serial.print(min_pin_num-1);
-          Serial.println("");
+//          Serial.print("adding lit_up[ ");
+//          Serial.print(i);
+//          Serial.print(" ]");
+//          Serial.print(" : ");
+//          Serial.print(min_pin_num-1);
+//          Serial.println("");
           break;
         }  
       }
@@ -130,12 +130,12 @@ void add_next_pin_downwards(){
       lit_up[idx] = min_pin_num-1 ;
       last_idx=idx;
       
-      Serial.print("replacing lit_up[ ");
-      Serial.print(idx);
-      Serial.print(" ]");
-      Serial.print(" : ");
-      Serial.print(min_pin_num-1);
-      Serial.println("");
+//      Serial.print("replacing lit_up[ ");
+//      Serial.print(idx);
+//      Serial.print(" ]");
+//      Serial.print(" : ");
+//      Serial.print(min_pin_num-1);
+//      Serial.println("");
     }
 
     
@@ -150,10 +150,10 @@ void add_next_pin_downwards(){
 void add_next_pin(){
   int max_pin_num  = get_current_max_pin_num();
 
-  Serial.print("max_pin_num  ");
-  Serial.print(" : ");
-  Serial.print(max_pin_num);
-  Serial.println("");
+//  Serial.print("max_pin_num  ");
+//  Serial.print(" : ");
+//  Serial.print(max_pin_num);
+//  Serial.println("");
           
   if ( max_pin_num <= 11) {
     // find empty slot to fill in
@@ -163,12 +163,12 @@ void add_next_pin(){
         if ( lit_up[i] == -1 ) {
           lit_up[i] = max_pin_num+1; // May not work if reverse
 
-          Serial.print("adding lit_up[ ");
-          Serial.print(i);
-          Serial.print(" ]");
-          Serial.print(" : ");
-          Serial.print(max_pin_num+1);
-          Serial.println("");
+//          Serial.print("adding lit_up[ ");
+//          Serial.print(i);
+//          Serial.print(" ]");
+//          Serial.print(" : ");
+//          Serial.print(max_pin_num+1);
+//          Serial.println("");
           break;
         }  
       }
@@ -180,12 +180,12 @@ void add_next_pin(){
       
       lit_up[idx] = max_pin_num+1 ;
       
-      Serial.print("replacing lit_up[ ");
-      Serial.print(idx);
-      Serial.print(" ]");
-      Serial.print(" : ");
-      Serial.print(max_pin_num+1);
-      Serial.println("");
+//      Serial.print("replacing lit_up[ ");
+//      Serial.print(idx);
+//      Serial.print(" ]");
+//      Serial.print(" : ");
+//      Serial.print(max_pin_num+1);
+//      Serial.println("");
     }
     
   } else { // reached 11 pin, not adding, but 
@@ -214,7 +214,7 @@ void on_off_step(){
         digitalWrite(digitPin, LOW);
         
         
-        Serial.println("doing 2 .. ");
+//        Serial.println("doing 2 .. ");
 
         if ( off_count - num_of_lit_up == 0 ) {
           // reset
@@ -242,7 +242,7 @@ void on_off_step(){
           off_count += 1;
           digitalWrite(digitPin, LOW);
           
-          Serial.println("doing 4 .. ");
+//          Serial.println("doing 4 .. ");
 
           if ( off_count - num_of_lit_up == 0 ) {
             // reset
@@ -264,8 +264,8 @@ void loop() {
   
   **/
 
-  Serial.print(loop_cnt);
-  Serial.println("");
+//  Serial.print(loop_cnt);
+//  Serial.println("");
 
   // --------- changing status ---------
 
