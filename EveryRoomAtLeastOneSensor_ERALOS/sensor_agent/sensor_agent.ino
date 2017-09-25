@@ -3,8 +3,9 @@
 #include <dht.h>
 
 
-//#define dht_apin A0
-#define dht_apin 4
+//#define dht_apin A0  // When connecting to Arduino Uno
+#define dht_apin 4     // When connecting to Arduino D1 Wifi
+
 /**
  To send temperature and himidity to the local server
 
@@ -47,7 +48,7 @@ int default_interval_in_milli = 0;
 
  
 dht DHT;
-
+WiFiClient client;
 
 
 void setup() {
@@ -66,10 +67,25 @@ void setup() {
 
 void loop() {
 
+    // reconnect if wifi lost
+    if ( WiFi.status()!= WL_CONNECTED ) {
+      online();
+    }
 
-      
-//      connect();
-      postData();
+    
+    if ( connect() ) {
+      if (postData() ) {
+        // read response and somehow display
+
+        
+        delay(default_interval_in_milli);
+      } else { // POST request failed
+        delay(1000); // retry  TODO: save to local storage?
+      }
+    } else {  // CONNECT failed
+      delay(3000); // retry, Q: how to make it power wise? A:
+    }
+    
 
 
 //    receiveDweet();
@@ -100,33 +116,47 @@ void online(){
 
 
 
-void connect(){
+bool connect(){
+  const int httpPort = 4567;
+  Serial.print("Connecting to : ");
+  Serial.println(host);
+  if (!client.connect(host, httpPort)) {
+    Serial.println("Connection Failed");
+    return false;
+  } 
   
   
+  Serial.println("Connected Successfully!");
+  return true;
 }
 
+bool timeout() {      
+    long interval = 2000;
+    unsigned long currentMillis = millis(), previousMillis = millis();
 
-void postData()
+    while(!client.available()){
+      if( (currentMillis - previousMillis) > interval ){
+        Serial.println("Timeout");
+
+        // TODO: blink the wifi led or something for signaling
+
+        Serial.println("\nClosing Connection");
+        client.stop();     
+        return false;
+      }
+      currentMillis = millis();
+    }
+    return true;
+}
+
+bool postData()
 {
-    
     Serial.print(">>>>>>>>>>  Posting data  ...");
-    
-
-    // TODO: can you make code into subroutine?
-    WiFiClient client;
-    const int httpPort = 4567;
-    Serial.print("Connecting to : ");
-    Serial.println(host);
-    if (!client.connect(host, httpPort)) {
-      Serial.println("Connection Failed");
-      return;
-    } 
-
-    
-    Serial.println("Connected Successfully!");
     Serial.println("Sending data! ");
 
-    // TODO: what if network takes too long for sending the data? 
+    // Q: what if network takes too long for sending the data? 
+    // A: 
+
     
     // reading sensor and send 
     DHT.read11(dht_apin);
@@ -137,13 +167,6 @@ void postData()
     Serial.print("temperature = ");
     Serial.print(DHT.temperature); 
     Serial.println("C  ");
-
-    
-    
-//    String postdata = "temp=";
-//    postdata.concat(String(DHT.humidity));
-//    postdata.concat("&humid=");
-//    postdata.concat(String(DHT.temperature));  // in celsius
 
     // create an object
     StaticJsonBuffer<200> jsonBuffer;
@@ -170,50 +193,29 @@ void postData()
     // TODO: more accurate interval despite other delay or sleep or network time spend
     // for now and for simplicity, the network should take less then 1 second, which is not significant
 
-    
-    long interval = 2000;
-    unsigned long currentMillis = millis(), previousMillis = millis();
-
-
-    Serial.print("1111111111111");
-    while(!client.available()){
-      if( (currentMillis - previousMillis) > interval ){
-        Serial.println("Timeout");
-
-        // TODO: blink the wifi led or something for signaling
-        
-//        blinkLed.detach();
-//        digitalWrite(2, LOW);
-
-        Serial.println("\nClosing Connection");
-        client.stop();     
-        return;
-      }
-      currentMillis = millis();
+    if ( timeout() ) {
+      return false;
     }
 
-    Serial.print("2222222222");
+    // read response
     while (client.connected())
     {
       if ( client.available() )
       {
         response = client.readStringUntil('\n');
         Serial.println(response);
-
-       // TODO: parse out response here
-       
-      }      
+      }  else {
+        break;    
+      }
     }
 
-    Serial.print("333333333");
     client.stop();
     Serial.println("\nClosing Connection after response!");
 
     Serial.print("Recollect after seconds : ");
     Serial.println(String(default_interval_in_milli / 1000));
 
-    //TODO: should not delay if anything wrong
-    delay(default_interval_in_milli);
+    return true;
 }
 
 
