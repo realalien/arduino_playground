@@ -5,7 +5,7 @@ int sensorPin = A0; // select the input pin for the input device
 
 const int numberOfLEDs = 10;
 int counter =0;
-int ms_delay=100; // 10ms is to fast for small array
+int ms_delay=80; // 10ms is to fast for small array
 const int num_of_lit_up = 5;//  num of LED should be on at one time, instead of full length, shall look like moving bricks. 
 int lit_up[num_of_lit_up];  // contain the pin numbers to be lit up
 
